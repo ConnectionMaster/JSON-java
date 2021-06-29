@@ -65,6 +65,7 @@ public class XMLTest {
     @Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 
+    
     /**
      * JSONObject from a null XML string.
      * Expects a NullPointerException

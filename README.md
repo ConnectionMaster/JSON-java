@@ -1,9 +1,15 @@
+![Json-Java logo](https://github.com/stleary/JSON-java/blob/master/images/JsonJava.png?raw=true)
+
+<sub><sup>image credit: Ismael Pérez Ortiz</sup></sub>
+
+
 JSON in Java [package org.json]
 ===============================
 
 [![Maven Central](https://img.shields.io/maven-central/v/org.json/json.svg)](https://mvnrepository.com/artifact/org.json/json)
 
-**[Click here if you just want the latest release jar file.](https://repo1.maven.org/maven2/org/json/json/20201115/json-20201115.jar)**
+**[Click here if you just want the latest release jar file.](https://search.maven.org/remotecontent?filepath=org/json/json/20210307/json-20210307.jar)**
+
 
 # Overview
 
@@ -246,6 +252,8 @@ and artifactId "json". For example:
 [https://search.maven.org/search?q=g:org.json%20AND%20a:json&core=gav](https://search.maven.org/search?q=g:org.json%20AND%20a:json&core=gav)
 
 ~~~
+20210307    Recent commits and potentially breaking fix to JSONPointer
+
 20201115    Recent commits and first release after project structure change
 
 20200518    Recent commits and snapshot before project structure change
