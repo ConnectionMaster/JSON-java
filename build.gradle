@@ -21,6 +21,7 @@ repositories {
 }
 
 // To view the report open build/reports/jacoco/test/html/index.html
+// Note: disable jacocoTestReport and test blocks, and the jacoco plugin if it interferes with stepping in the debugger
 jacocoTestReport {
     reports {
         html.required = true
@@ -29,6 +30,13 @@ jacocoTestReport {
 
 test {
     finalizedBy jacocoTestReport
+}
+
+// enable logging to stdout during test
+tasks.withType(Test) {
+    testLogging {
+        showStandardStreams = true
+    }
 }
 
 dependencies {
@@ -42,7 +50,7 @@ subprojects {
 }
 
 group = 'org.json'
-version = 'v20260719-SNAPSHOT'
+version = 'v20260814-SNAPSHOT'
 description = 'JSON in Java'
 sourceCompatibility = '1.8'
 
