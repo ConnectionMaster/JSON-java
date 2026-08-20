@@ -233,78 +233,25 @@ public class XML {
     }
 
     /**
-     * Throw an exception if the string is not a valid XML 1.0 {@code Name}
-     * (element name). Used by {@link #toString(Object)} to reject JSON keys that
-     * would otherwise be emitted verbatim between {@code <} and {@code >} and
-     * could break out of the tag context (element injection, CWE-91;
-     * see issue #1071 and #294).
+     * Throw an exception if the string contains an XML metacharacter
+     * ({@code < > & " ' /}). Used by {@link #toString(Object)} to reject JSON
+     * keys that would otherwise be emitted verbatim between {@code <} and
+     * {@code >} and could break out of the tag context (element injection,
+     * CWE-91; see issue #1071).
      *
      * @param string the candidate element name
-     * @throws JSONException if {@code string} is null, empty, or contains a
-     *             character outside the XML 1.0 Name production
+     * @throws JSONException if {@code string} contains an XML metacharacter
      */
-    static void mustBeXmlName(String string) throws JSONException {
-        if (string == null || string.isEmpty()) {
-            throw new JSONException("'" + string
-                    + "' is not a valid XML element name.");
-        }
-        int cp = string.codePointAt(0);
-        if (!isXmlNameStart(cp)) {
-            throw new JSONException("'" + string
-                    + "' is not a valid XML element name.");
-        }
-        for (int i = Character.charCount(cp); i < string.length(); i += Character.charCount(cp)) {
-            cp = string.codePointAt(i);
-            if (!isXmlNameChar(cp)) {
+    static void noXmlMetachars(String string) throws JSONException {
+        int length = string.length();
+        for (int i = 0; i < length; i++) {
+            char c = string.charAt(i);
+            if (c == '<' || c == '>' || c == '&'
+                    || c == '"' || c == '\'' || c == '/') {
                 throw new JSONException("'" + string
-                        + "' is not a valid XML element name.");
+                        + "' contains an XML metacharacter and may not be used as an element name.");
             }
         }
-    }
-
-    private static boolean inRange(int cp, int lo, int hi) {
-        return cp >= lo && cp <= hi;
-    }
-
-    /**
-     * XML 1.0 (5th ed.) {@code NameStartChar} production.
-     *
-     * @param cp a Unicode code point
-     * @return true if {@code cp} may start an XML Name
-     */
-    private static boolean isXmlNameStart(int cp) {
-        return cp == ':'
-                || cp == '_'
-                || inRange(cp, 'A', 'Z')
-                || inRange(cp, 'a', 'z')
-                || inRange(cp, 0xC0,    0xD6)
-                || inRange(cp, 0xD8,    0xF6)
-                || inRange(cp, 0xF8,    0x2FF)
-                || inRange(cp, 0x370,   0x37D)
-                || inRange(cp, 0x37F,   0x1FFF)
-                || inRange(cp, 0x200C,  0x200D)
-                || inRange(cp, 0x2070,  0x218F)
-                || inRange(cp, 0x2C00,  0x2FEF)
-                || inRange(cp, 0x3001,  0xD7FF)
-                || inRange(cp, 0xF900,  0xFDCF)
-                || inRange(cp, 0xFDF0,  0xFFFD)
-                || inRange(cp, 0x10000, 0xEFFFF);
-    }
-
-    /**
-     * XML 1.0 (5th ed.) {@code NameChar} production.
-     *
-     * @param cp a Unicode code point
-     * @return true if {@code cp} may appear after the first character of an XML Name
-     */
-    private static boolean isXmlNameChar(int cp) {
-        return isXmlNameStart(cp)
-                || cp == '-'
-                || cp == '.'
-                || cp == 0xB7
-                || inRange(cp, '0', '9')
-                || inRange(cp, 0x0300, 0x036F)
-                || inRange(cp, 0x203F, 0x2040);
     }
 
     /**
@@ -1044,7 +991,7 @@ public class XML {
         String string;
 
         if (tagName != null) {
-            mustBeXmlName(tagName);
+            noXmlMetachars(tagName);
         }
 
         if (object instanceof JSONObject) {
@@ -1066,7 +1013,7 @@ public class XML {
             jo = (JSONObject) object;
             for (final String key : jo.keySet()) {
                 if (!key.equals(config.getcDataTagName())) {
-                    mustBeXmlName(key);
+                    noXmlMetachars(key);
                 }
                 Object value = jo.opt(key);
                 if (value == null) {

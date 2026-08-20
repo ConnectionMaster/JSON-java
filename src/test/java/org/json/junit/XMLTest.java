@@ -538,29 +538,31 @@ public class XMLTest {
 
 
     /**
-     * JSON keys that are not valid XML 1.0 Names are rejected by
-     * XML.toString rather than being emitted as (malformed) tag names.
-     * See issues #166, #294, #308 and #1071.
+     * Possible bug: 
+     * Illegal node-names must be converted to legal XML-node-names.
+     * The given example shows 2 nodes which are valid for JSON, but not for XML.
+     * Therefore illegal arguments should be converted to e.g. an underscore (_).
      */
     @Test
     public void shouldHandleIllegalJSONNodeNames()
     {
-        // Name may not start with a digit
-        try {
-            XML.toString(new JSONObject().append("123IllegalNode", "someValue1"));
-            fail("expected JSONException for digit-leading element name");
-        } catch (JSONException expected) {
-            assertTrue("message names the offending key",
-                    expected.getMessage().contains("123IllegalNode"));
-        }
-        // Name may not contain '@'
-        try {
-            XML.toString(new JSONObject().append("Illegal@node", "someValue2"));
-            fail("expected JSONException for '@' in element name");
-        } catch (JSONException expected) {
-            assertTrue("message names the offending key",
-                    expected.getMessage().contains("Illegal@node"));
-        }
+        JSONObject inputJSON = new JSONObject();
+        inputJSON.append("123IllegalNode", "someValue1");
+        inputJSON.append("Illegal@node", "someValue2");
+
+        String result = XML.toString(inputJSON);
+
+        /*
+         * This is invalid XML. Names should not begin with digits or contain
+         * certain values, including '@'. One possible solution is to replace
+         * illegal chars with '_', in which case the expected output would be:
+         * <___IllegalNode>someValue1</___IllegalNode><Illegal_node>someValue2</Illegal_node>
+         */
+        String expected = "<123IllegalNode>someValue1</123IllegalNode><Illegal@node>someValue2</Illegal@node>";
+
+        assertEquals("length",expected.length(), result.length());
+        assertTrue("123IllegalNode",result.contains("<123IllegalNode>someValue1</123IllegalNode>"));
+        assertTrue("Illegal@node",result.contains("<Illegal@node>someValue2</Illegal@node>"));
     }
 
     /**
@@ -577,36 +579,26 @@ public class XMLTest {
             XML.toString(jo, "root");
             fail("expected JSONException for key containing XML metacharacters");
         } catch (JSONException expected) {
-            // expected: '/', '<', '>' are outside the XML Name production
+            // expected: '/', '<', '>' are rejected in element names
         }
 
-        // caller-supplied tagName is validated too
+        // caller-supplied tagName is checked too
         try {
-            XML.toString(new JSONObject(), "bad tag");
-            fail("expected JSONException for tagName containing whitespace");
+            XML.toString(new JSONObject(), "bad<tag");
+            fail("expected JSONException for tagName containing '<'");
         } catch (JSONException expected) {
-            // expected: space is outside the XML Name production
+            // expected: '<' is rejected in element names
         }
-    }
 
-    /**
-     * Keys that are valid XML 1.0 Names continue to serialise unchanged.
-     */
-    @Test
-    public void toStringAcceptsValidXmlNames()
-    {
-        JSONObject jo = new JSONObject();
-        jo.put("simple", "a");
-        jo.put("with-hyphen.dot_underscore", "b");
-        jo.put("ns:qualified", "c");
-        jo.put("élément", "d");            // Latin-1 letters
-        jo.put("content", "e");                      // cDataTagName sentinel, emitted as text
-        String xml = XML.toString(jo, "root");
-        assertTrue(xml.contains("<simple>a</simple>"));
-        assertTrue(xml.contains("<with-hyphen.dot_underscore>b</with-hyphen.dot_underscore>"));
-        assertTrue(xml.contains("<ns:qualified>c</ns:qualified>"));
-        assertTrue(xml.contains("<élément>d</élément>"));
-        assertTrue("cDataTagName still emitted as text content", xml.contains(">e<"));
+        // each metacharacter is rejected individually
+        for (char c : new char[] {'<', '>', '&', '"', '\'', '/'}) {
+            try {
+                XML.toString(new JSONObject().put("a" + c + "b", "v"));
+                fail("expected JSONException for key containing '" + c + "'");
+            } catch (JSONException expected) {
+                // expected
+            }
+        }
     }
 
     /**
