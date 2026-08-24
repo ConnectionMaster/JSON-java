@@ -566,6 +566,42 @@ public class XMLTest {
     }
 
     /**
+     * A JSON key containing XML metacharacters must not be emitted as a raw
+     * tag name, since doing so allows the key to break out of its element and
+     * inject sibling structure into the output (CWE-91, issue #1071).
+     */
+    @Test
+    public void toStringRejectsElementInjectionInKey()
+    {
+        JSONObject jo = new JSONObject(
+                "{\"a/><injected>evil</injected><a\":\"\"}");
+        try {
+            XML.toString(jo, "root");
+            fail("expected JSONException for key containing XML metacharacters");
+        } catch (JSONException expected) {
+            // expected: '/', '<', '>' are rejected in element names
+        }
+
+        // caller-supplied tagName is checked too
+        try {
+            XML.toString(new JSONObject(), "bad<tag");
+            fail("expected JSONException for tagName containing '<'");
+        } catch (JSONException expected) {
+            // expected: '<' is rejected in element names
+        }
+
+        // each metacharacter is rejected individually
+        for (char c : new char[] {'<', '>', '&', '"', '\'', '/'}) {
+            try {
+                XML.toString(new JSONObject().put("a" + c + "b", "v"));
+                fail("expected JSONException for key containing '" + c + "'");
+            } catch (JSONException expected) {
+                // expected
+            }
+        }
+    }
+
+    /**
      * JSONObject with NULL value, to XML.toString()
      */
     @Test

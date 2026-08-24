@@ -239,6 +239,28 @@ public class XML {
     }
 
     /**
+     * Throw an exception if the string contains an XML metacharacter
+     * ({@code < > & " ' /}). Used by {@link #toString(Object)} to reject JSON
+     * keys that would otherwise be emitted verbatim between {@code <} and
+     * {@code >} and could break out of the tag context (element injection,
+     * CWE-91; see issue #1071).
+     *
+     * @param string the candidate element name
+     * @throws JSONException if {@code string} contains an XML metacharacter
+     */
+    static void noXmlMetachars(String string) throws JSONException {
+        int length = string.length();
+        for (int i = 0; i < length; i++) {
+            char c = string.charAt(i);
+            if (c == '<' || c == '>' || c == '&'
+                    || c == '"' || c == '\'' || c == '/') {
+                throw new JSONException("'" + string
+                        + "' contains an XML metacharacter and may not be used as an element name.");
+            }
+        }
+    }
+
+    /**
      * Scan the content following the named tag, attaching it to the context.
      *
      * @param x
@@ -974,6 +996,10 @@ public class XML {
         JSONObject jo;
         String string;
 
+        if (tagName != null) {
+            noXmlMetachars(tagName);
+        }
+
         if (object instanceof JSONObject) {
 
             // Emit <tagName>
@@ -992,6 +1018,9 @@ public class XML {
             // don't use the new entrySet accessor to maintain Android Support
             jo = (JSONObject) object;
             for (final String key : jo.keySet()) {
+                if (!key.equals(config.getcDataTagName())) {
+                    noXmlMetachars(key);
+                }
                 Object value = jo.opt(key);
                 if (value == null) {
                     value = "";
